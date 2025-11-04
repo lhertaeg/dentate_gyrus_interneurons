@@ -1,1 +1,1 @@
-# Dentate_gyrus_PV
+# Project description
