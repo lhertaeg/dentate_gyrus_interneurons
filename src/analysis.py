@@ -20,6 +20,7 @@ import pickle
 color_GCs = '#646464'
 color_PVIIs = '#C80000'
 color_PVIOs = '#001BE0'
+color_SI = '#006837'
 
 # %% functions
 
@@ -218,7 +219,7 @@ def plot_input_barcode_lines(matrix, threshold, title="Input barcode", figsize=(
 
 def plot_suppression_index(rates, assembly_code, assembly_1=1, assembly_2=2,
                            time_window=None, figsize=(8,4), title=" ", 
-                           xlabel="Time steps", ylabel="Suppression Index (SI)", fs=5, lw=1, ax=None):
+                           xlabel="Time steps", ylabel="Suppression Index", fs=5, lw=1, ax=None):
     """
     Plot the suppression index (SI) over time for two assemblies.
 
@@ -252,7 +253,7 @@ def plot_suppression_index(rates, assembly_code, assembly_1=1, assembly_2=2,
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
         
-    ax.plot(x_vals, SI, color=color_GCs, lw=lw)
+    ax.plot(x_vals, SI, color=color_SI, lw=lw)
     ax.set_ylim([-1, 1.1])
     ax.set_xlim([0, x_vals[-1]])  # start x at zero
     ax.set_xlabel(xlabel, fontsize=fs)
@@ -348,6 +349,76 @@ def plot_scatter_weights(weights, assembly_mask, aggregate='Avg', fs=5, s=2, axe
     ax.tick_params(axis='both', labelsize=fs)
     sns.despine(ax=ax)
 
+    plt.show()
+    
+    
+def plot_SI_heatmap(SIs, x_values=None, y_values=None, xlabel="PVII → GC Strength", ylabel="GC → PVII Strength",
+                    title=None, cmap="YlGn", vmin=None, vmax=None, annot=False, fmt=".2f", fs=5, ax=None):
+    """
+    Plots a heatmap of the Selectivity Index (SI) matrix.
+
+    Parameters
+    ----------
+    SIs : 2D array
+        Matrix of SI values with shape (len(y_values), len(x_values))
+    x_values : list or array, optional
+        Values for x-axis labels (e.g., strengths_PVIIs_to_GCs)
+    y_values : list or array, optional
+        Values for y-axis labels (e.g., strengths_GCs_to_PVIIs)
+    title : str
+        Title of the heatmap
+    cmap : str
+        Colormap for heatmap
+    vmin, vmax : float
+        Fix color range for comparisons across plots
+    annot : bool
+        If True, show SI values inside heatmap cells
+    fmt : str
+        Format for annotations (e.g. ".2f")
+    """
+    
+    if ax is None:
+        plt.figure(figsize=(8, 6))
+    
+    ax = sns.heatmap(
+        SIs,
+        annot=annot,
+        fmt=fmt,
+        cmap=cmap,
+        vmin=vmin, vmax=vmax,
+        xticklabels=False,
+        yticklabels=False
+    )
+    
+    if x_values is not None:
+        xticks = np.linspace(0, len(x_values) - 1, 3).astype(int)
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(np.round(np.array(x_values)[xticks], 3), fontsize=fs)
+
+    if y_values is not None:
+        yticks = np.linspace(0, len(y_values) - 1, 3).astype(int)
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(np.round(np.array(y_values)[yticks], 3), fontsize=fs)
+    
+    if title is not None:
+        ax.set_title(title, fontsize=fs, pad=12)
+    ax.set_xlabel(xlabel, fontsize=fs)
+    ax.set_ylabel(ylabel, fontsize=fs)
+    
+    cbar = ax.collections[0].colorbar
+    cbar.set_label('Supression index', fontsize=fs)         # label
+    cbar.ax.tick_params(labelsize=fs, size=2.0)
+    
+    cbar.set_ticks(np.linspace(vmin if vmin is not None else np.nanmin(SIs), 
+                               vmax if vmax is not None else np.nanmax(SIs),3))
+    
+    ax.invert_yaxis()
+    
+    ax.tick_params(size=2.0) 
+    ax.tick_params(axis='both', labelsize=fs)
+    sns.despine(ax=ax)
+    
+    plt.tight_layout()
     plt.show()
 
 

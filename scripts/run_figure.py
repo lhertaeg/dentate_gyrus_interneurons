@@ -17,9 +17,10 @@ import matplotlib.gridspec as gridspec
 import os.path
 
 import src.default as default
-import run_one_pattern, run_alternating_pattern, run_coactivated_pattern
+import run_one_pattern, run_alternating_pattern, run_coactivated_pattern, run_SI_dependence
 
 from src.analysis import load_or_generate, plot_scatter_weights, plot_population_rates, plot_suppression_index
+from src.analysis import plot_SI_heatmap
 
 # %% Universal parameters
 
@@ -43,7 +44,7 @@ fig = plt.figure(figsize=figsize)
 G = gridspec.GridSpec(3, 1, figure=fig, hspace=1)
 R1 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=G[0,0], wspace=1, width_ratios=[0.7,0.7,0,1,1]) # middle one is to increase white space
 R2 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=G[1,0], wspace=0.3, width_ratios=[1,1,0.1,1,1]) # middle one is to increase white space
-R3 = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=G[2,0], wspace=0.3, width_ratios=[1,1,1,1]) 
+R3 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=G[2,0], wspace=0.4, width_ratios=[1,1,1,0.05,1]) 
 
 ax_A = fig.add_subplot(R1[0,0])
 ax_A.axis('off')
@@ -70,8 +71,7 @@ ax_D.text(-0.05, 1.25, 'D', transform=ax_D.transAxes, fontsize=fs+1)
 
 ax_D2 = fig.add_subplot(R3[0,1])
 ax_D3 = fig.add_subplot(R3[0,2])
-
-#ax_D2.set_title('Example in which the network relies more strongly on sensory inputs', fontsize=fs, pad=15)
+ax_D4 = fig.add_subplot(R3[0,4])
 
 
 # %% run one pattern
@@ -117,7 +117,7 @@ assembly_code[assembly_neurons_2] = 2
 
 # plot supression index
 plot_suppression_index(rates, assembly_code, assembly_1=1, assembly_2=2, time_window=(0,100),
-                       title="Coactivation of familiar & novel assembly", ax=ax_D2) 
+                       title="Coactivation of familiar \n& novel assembly", ax=ax_D2) 
 
 
 # %% run alternating pattern
@@ -141,7 +141,22 @@ assembly_code[assembly_neurons_2] = 2
 
 
 plot_suppression_index(rates, assembly_code, assembly_1=1, assembly_2=2, figsize=(5,3),
-                       title="Alternating between 2 assemblies", ylabel=None, ax=ax_D3) 
+                       title="Alternating between \n2 assemblies", ylabel=None, ax=ax_D3) 
+
+
+# %% run heatmap for supression index
+
+# load existing data or run simulation
+load_path = os.path.join("..", "results", "data_SI_dependency.pkl")
+data = load_or_generate(load_path, run_SI_dependence.generate_and_save_data, rerun=False)
+
+# get results
+SIs = data["SIs"] 
+max_ws = data["max_ws"]
+strengths_PVIIs_to_GCs = data["strengths_PVIIs_to_GCs"]
+
+plot_SI_heatmap(SIs, annot=False, vmin=0, vmax=1, x_values=max_ws, y_values=strengths_PVIIs_to_GCs,
+                    xlabel="Maximal weight (during learning)", ylabel="Total initial PVII → GC", ax=ax_D4)
 
 
 # %% save figure
