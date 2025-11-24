@@ -16,7 +16,7 @@ from src.inputs import generate_training_input
 from src.model import DentateGyrus
 import src.default as default
 
-from src.analysis import load_or_generate, plot_population_rates, plot_input_barcode_lines, plot_scatter_weights
+from src.analysis import load_or_generate, plot_population_rates, plot_input_barcode_lines, plot_weight_histograms
 
 
 # %% stimulate network with one input pattern
@@ -47,7 +47,7 @@ def generate_and_save_data():
                              eta=default.eta, w_max=default.w_max, plasticity=True)
 
     # save and return data    
-    data = {"results": results, "EC_input2E": EC_input2E, "EC_input2PVFF": EC_input2PVFF}
+    data = {"results": results, "EC_input2E": EC_input2E, "EC_input2PVFF": EC_input2PVFF, "model": model}
     
     save_path = os.path.join("..", "results", "data_one_pattern.pkl")
     with open(save_path, "wb") as f:
@@ -63,15 +63,18 @@ def plot_data(data):
     rates = data["results"]["rates"]
     weights = data["results"]["weights"]
     EC_input2E = data["EC_input2E"]
+    model = data["model"]
     
     threshold = (default.mean_exc + default.assembly_input)/2
-    plot_input_barcode_lines(EC_input2E[:,0,:], threshold, title=None, figsize=(4, 1), show_xaxis=False)
+#    plot_input_barcode_lines(EC_input2E[:,0,:], threshold, title=None, figsize=(4, 1), show_xaxis=False)
     
-    plot_scatter_weights(weights, assembly_mask=EC_input2E[:, 0, :].mean(axis=0) > threshold, aggregate='Avg')
+    # plot_scatter_weights(weights, assembly_mask=EC_input2E[:, 0, :].mean(axis=0) > threshold, aggregate='Avg')
+    assembly_mask = EC_input2E[:, 0, :].mean(axis=0) > threshold
+    plot_weight_histograms(weights, model, assembly_mask, spike_value=1e-6, n_bins=30)
 
-    plot_population_rates(rates, mode="mean", figsize=(5,4))
-    plot_population_rates(rates, mode="all", populations=["GCs", "PVIIs"], figsize=(5, 2)) # mode = {"mean", "all"}
-
+#    plot_population_rates(rates, mode="mean", figsize=(5,4))
+#    plot_population_rates(rates, mode="all", populations=["GCs", "PVIIs"], figsize=(5, 2)) # mode = {"mean", "all"}
+    
     
 def main(rerun=False):
     
@@ -82,5 +85,5 @@ def main(rerun=False):
 
 
 if __name__ == "__main__":
-    main(rerun=True)
+    main(rerun=False)
     

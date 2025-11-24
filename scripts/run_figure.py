@@ -20,7 +20,7 @@ import src.default as default
 import run_one_pattern, run_alternating_pattern, run_coactivated_pattern, run_SI_dependence
 
 from src.analysis import load_or_generate, plot_scatter_weights, plot_population_rates, plot_suppression_index
-from src.analysis import plot_SI_heatmap
+from src.analysis import plot_SI_heatmap, plot_weight_histograms
 
 # %% Universal parameters
 
@@ -42,7 +42,7 @@ figsize=(18/inch,14/inch)
 fig = plt.figure(figsize=figsize)
 
 G = gridspec.GridSpec(3, 1, figure=fig, hspace=1)
-R1 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=G[0,0], wspace=1, width_ratios=[0.7,0.7,0,1,1]) # middle one is to increase white space
+R1 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=G[0,0], wspace=0.5, width_ratios=[0.7,0.7,0,1,1]) # middle one is to increase white space
 R2 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=G[1,0], wspace=0.3, width_ratios=[1,1,0.1,1,1]) # middle one is to increase white space
 R3 = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=G[2,0], wspace=0.4, width_ratios=[1,1,1,0.05,1]) 
 
@@ -52,7 +52,7 @@ ax_A.text(-0.3, 1.25, 'A', transform=ax_A.transAxes, fontsize=fs+1)
 
 ax_B = fig.add_subplot(R1[0,3:])
 ax_B.axis('off')
-ax_B.text(-0.25, 1.25, 'B', transform=ax_B.transAxes, fontsize=fs+1)
+ax_B.text(-0.2, 1.25, 'B', transform=ax_B.transAxes, fontsize=fs+1)
 
 ax_B1 = fig.add_subplot(R1[0,3])
 ax_B2 = fig.add_subplot(R1[0,4])
@@ -84,11 +84,15 @@ data = load_or_generate(load_path, run_one_pattern.generate_and_save_data, rerun
 rates = data["results"]["rates"]
 weights = data["results"]["weights"]
 EC_input2E = data["EC_input2E"]
+model = data["model"]
 
 # plot results
 threshold = (default.mean_exc + default.assembly_input)/2
-plot_scatter_weights(weights, assembly_mask=EC_input2E[:, 0, :].mean(axis=0) > threshold, aggregate='Avg', 
-                     fs=fs, axes=[ax_B1, ax_B2])
+# plot_scatter_weights(weights, assembly_mask=EC_input2E[:, 0, :].mean(axis=0) > threshold, aggregate='Avg', 
+#                      fs=fs, axes=[ax_B1, ax_B2])
+
+assembly_mask = EC_input2E[:, 0, :].mean(axis=0) > threshold
+plot_weight_histograms(weights, model, assembly_mask, spike_value=1e-6, n_bins=20, fs=fs, axes=[ax_B1, ax_B2])
 
 plot_population_rates(rates, mode="all", populations=["GCs", "PVIIs"], fs=fs, axes=[ax_C1, ax_C2])
 plot_population_rates(rates, mode="mean", figsize=(5,4), fs=fs, axes=ax_C3)

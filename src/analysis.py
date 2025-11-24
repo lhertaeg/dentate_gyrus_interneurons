@@ -24,6 +24,116 @@ color_SI = '#006837'
 
 # %% functions
 
+
+def plot_weight_histograms(weights, model, assembly_mask, spike_value=1e-6, n_bins=30, fs=12, axes=None):
+    """
+    Two-panel histogram plot of mean weights for non-assembly vs assembly groups.
+    Panel 1: E -> PV (PV_FB_E)
+    Panel 2: PV -> E (E_PV_FB)
+    
+    Parameters
+    ----------
+    weights : dict
+        Weight matrices with keys "PV_FB_E" and "E_PV_FB", shape [time, post, pre]
+    model : object
+        Object containing entry masks, e.g., model.mask_PV_FB_E, model.mask_E_PV_FB
+    assembly_mask : np.ndarray
+        Boolean array selecting assembly neurons (length matches E cells)
+    spike_value : float
+        Threshold to treat very small values as spike for plotting
+    n_bins : int
+        Number of log-spaced bins for the histogram
+    fs : int
+        Font size for labels
+    figsize : tuple
+        Figure size
+    """
+    
+    # --- Utility function ---
+    def compute_mean_over_mask(weights_matrix, entry_mask, assembly_mask, axis=0):
+        if axis == 0:
+            data_nonassembly = weights_matrix[~assembly_mask, :]
+            mask_nonassembly = entry_mask[~assembly_mask, :]
+            data_assembly = weights_matrix[assembly_mask, :]
+            mask_assembly = entry_mask[assembly_mask, :]
+        elif axis == 1:
+            data_nonassembly = weights_matrix[:, ~assembly_mask]
+            mask_nonassembly = entry_mask[:, ~assembly_mask]
+            data_assembly = weights_matrix[:, assembly_mask]
+            mask_assembly = entry_mask[:, assembly_mask]
+        else:
+            raise ValueError("axis must be 0 or 1")
+
+        nonassembly_mean = np.nanmean(np.where(mask_nonassembly, data_nonassembly, np.nan), axis=axis)
+        assembly_mean = np.nanmean(np.where(mask_assembly, data_assembly, np.nan), axis=axis)
+        return nonassembly_mean, assembly_mean
+    
+    # --- Compute mean weights ---
+    w_PV_E = weights["PV_FB_E"][-1, :, :]
+    w_x1, w_y1 = compute_mean_over_mask(w_PV_E, model.mask_PV_FB_E, assembly_mask, axis=0)
+
+    w_E_PV = weights["E_PV_FB"][-1, :, :]
+    w_x2, w_y2 = compute_mean_over_mask(w_E_PV, model.mask_E_PV_FB, assembly_mask, axis=1)
+    
+    # --- Plotting ---
+    if axes is None:
+        fig, axes = plt.subplots(1, 2, figsize=(10,5))
+    
+    panel_info = [
+        (axes[0], w_x1, w_y1, r"GC → PV$_\mathrm{II}$ (Hebbian)", color_GCs),
+        (axes[1], w_x2, w_y2, r"PV$_\mathrm{II}$ → GC (Anti-Hebb)", color_PVIIs)
+    ]
+    
+    for ax, x_data, y_data, title, color in panel_info:
+        # Separate spike and rest
+        x_spike_count = np.sum(x_data <= spike_value)
+        y_spike_count = np.sum(y_data <= spike_value)
+        x_rest = x_data[x_data > spike_value]
+        y_rest = y_data[y_data > spike_value]
+        
+        # Determine log-spaced bins for remaining data
+        if len(x_rest) == 0:
+            min_log_x = spike_value
+        else:
+            min_log_x = min(x_rest.min(), y_rest.min())
+        max_val = max(x_rest.max(), y_rest.max()) if len(x_rest) > 0 else spike_value*10
+        log_bins = np.logspace(np.log10(min_log_x), np.log10(max_val), n_bins)
+        
+        # --- Plot bars for spike ---
+        # Non-assembly spike
+        ax.bar(spike_value, x_spike_count, width=spike_value*0.5,
+               facecolor='none', edgecolor=color, linestyle='-', alpha=0.7)
+        # Assembly spike
+        ax.bar(spike_value, y_spike_count, width=spike_value*0.5,
+               facecolor=color, edgecolor=color, alpha=0.7, bottom=x_spike_count)
+        
+        # --- Plot log-scaled histograms for rest ---
+        if len(x_rest) > 0:
+            # Non-assembly
+            ax.hist(x_rest, bins=log_bins, density=False, facecolor='none', edgecolor=color, linestyle='-', 
+                    alpha=0.7, lw=0.5, label='Non-assembly')
+            # Assembly
+            ax.hist(y_rest, bins=log_bins, density=False, facecolor=color, edgecolor=color, alpha=0.7, 
+                    lw=0.5, label='Assembly')
+        
+        ax.set_xscale('log')
+        ax.set_xlabel("Weight (log scale)", fontsize=fs)
+        
+        ax.set_ylabel("Count", fontsize=fs)
+        ax.set_title(title, fontsize=fs)
+        ax.grid(True, linestyle='--', alpha=0.4)
+        ax.legend(fontsize=fs-2, frameon=False, handlelength=1)
+        
+        ax.tick_params(size=2.0) 
+        ax.tick_params(axis='both', labelsize=fs)
+        sns.despine(ax=ax)
+    
+    axes[1].set_ylabel("")
+    plt.tight_layout()
+    plt.show()
+
+
+
 def load_or_generate(load_path, generate_fn, rerun=False):
     """
     Load data from pickle if it exists, otherwise call generate_fn() to create it.

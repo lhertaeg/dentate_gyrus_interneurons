@@ -19,7 +19,8 @@ class DentateGyrus(nn.Module):
     Naming convention: w_X_Y (and mask_X_Y) means Y -> X.
     Weight/mask shape: (n_presyn, n_postsyn) == (n_Y, n_X)
     """
-    def __init__(self, time_const, total_weights, n_E=1000, n_PV_FF=1, n_PV_FB=100, c_E_PV_FB=50., device='cpu'):
+    def __init__(self, time_const, total_weights, n_E=1000, n_PV_FF=1, n_PV_FB=100, c_E_PV_FB=50., 
+                 alternative_flag = 0, device='cpu'):
         super().__init__()
         self.device = device
         
@@ -46,7 +47,8 @@ class DentateGyrus(nn.Module):
         self.mask_PV_FB_E = sparse_mask(n_E, n_PV_FB, self.c_PV_FB_E / n_E)
         self.mask_E_PV_FB = sparse_mask(n_PV_FB, n_E, self.c_E_PV_FB / n_PV_FB)
         self.mask_E_PV_FF = sparse_mask(n_PV_FF, n_E, self.c_E_PV_FF / n_PV_FF)                      
-        self.mask_PV_FF_PV_FB = torch.ones(n_PV_FB, n_PV_FF, device=device)  
+        self.mask_PV_FF_PV_FB = torch.ones(n_PV_FB, n_PV_FF, device=device)
+        self.mask_PV_FB_PV_FB = torch.ones(n_PV_FB, n_PV_FB, device=device)  
     
         # --- weights: w_X_Y means Y -> X and has shape (n_Y, n_X) ---
         w_EE = torch.rand(n_E, n_E, device=device) * self.mask_EE * 2 * total_weights[0,0] / self.c_EE                  
@@ -54,12 +56,15 @@ class DentateGyrus(nn.Module):
         self.w_E_PV_FB = nn.Parameter(torch.rand(n_PV_FB, n_E, device=device) * self.mask_E_PV_FB) * 2 * total_weights[0,2] / self.c_E_PV_FB        
         w_E_PV_FF = torch.rand(n_PV_FF, n_E, device=device) * self.mask_E_PV_FF * 2 * total_weights[0,1] / self.c_E_PV_FF        
         w_PV_FF_PV_FB = torch.rand(n_PV_FB, n_PV_FF, device=device) * self.mask_PV_FF_PV_FB * 2 * total_weights[1,2] / n_PV_FB  
+        w_PV_FB_PV_FB = torch.rand(n_PV_FB, n_PV_FB, device=device) * self.mask_PV_FB_PV_FB * 2 * total_weights[2,2] / n_PV_FB 
     
         self.register_buffer("w_EE", w_EE)
         self.register_buffer("w_E_PV_FF", w_E_PV_FF)
         self.register_buffer("w_PV_FF_PV_FB", w_PV_FF_PV_FB)
+        self.register_buffer("w_PV_FB_PV_FB", w_PV_FB_PV_FB)
     
-    def step(self, h_E, h_PV_FF, h_PV_FB, EC_E, EC_PV_FF, dt=1.0, plasticity=False, eta=0.01, w_max = 1.0, anti_hebb=True):
+    def step(self, h_E, h_PV_FF, h_PV_FB, EC_E, EC_PV_FF, dt=1.0, plasticity=False, eta=0.01, w_max = 1.0, anti_hebb=True,
+             alternative_flag=0):
         """
         Single Euler time step update
         h_* : internal state (batch, n_neurons)
@@ -74,7 +79,9 @@ class DentateGyrus(nn.Module):
         # Inputs 
         I_E = (r_E @ self.w_EE) - (r_PV_FF @ self.w_E_PV_FF) - (r_PV_FB @ self.w_E_PV_FB) + EC_E
         I_PV_FF = EC_PV_FF - (r_PV_FB @ self.w_PV_FF_PV_FB)
-        I_PV_FB = (r_E @ self.w_PV_FB_E)
+        I_PV_FB = (r_E @ self.w_PV_FB_E) 
+        if alternative_flag==1:
+            I_PV_FB = EC_PV_FF + r_PV_FB @ self.w_PV_FB_PV_FB
         
         # Euler integration
         dh_E = (-h_E + I_E) / self.tau_E
@@ -107,7 +114,8 @@ class DentateGyrus(nn.Module):
         
         return h_E, h_PV_FF, h_PV_FB
     
-    def simulate(self, EC_input2E, EC_input2PVFF, T=500, dt=1.0, eta=0.01, w_max = 1.0, plasticity=False):
+    def simulate(self, EC_input2E, EC_input2PVFF, T=500, dt=1.0, eta=0.01, w_max = 1.0, plasticity=False, 
+                 alternative_flag=0):
         """
         Simulate network over time
         EC_input2E: [T, batch, n_E] external input over time for E neurons
@@ -132,7 +140,7 @@ class DentateGyrus(nn.Module):
             EC_E_t = torch.tensor(EC_input2E[t], dtype=torch.float32, device=self.device)
             EC_PV_t = torch.tensor(EC_input2PVFF[t], dtype=torch.float32, device=self.device)
             h_E, h_PV_FF, h_PV_FB = self.step(h_E, h_PV_FF, h_PV_FB, EC_E_t, EC_PV_t, dt=dt, eta=eta, w_max=w_max, 
-                                              plasticity=plasticity)
+                                              plasticity=plasticity, alternative_flag=alternative_flag)
             
             rE_hist.append(F.relu(h_E).detach().cpu())
             rFF_hist.append(F.relu(h_PV_FF).detach().cpu())
