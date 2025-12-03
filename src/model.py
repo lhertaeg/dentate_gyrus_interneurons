@@ -81,7 +81,7 @@ class DentateGyrus(nn.Module):
         I_PV_FF = EC_PV_FF - (r_PV_FB @ self.w_PV_FF_PV_FB)
         I_PV_FB = (r_E @ self.w_PV_FB_E) 
         if alternative_flag==1:
-            I_PV_FB = EC_PV_FF + r_PV_FB @ self.w_PV_FB_PV_FB
+            I_PV_FB += EC_PV_FF - r_PV_FB @ self.w_PV_FB_PV_FB
         
         # Euler integration
         dh_E = (-h_E + I_E) / self.tau_E

@@ -72,8 +72,8 @@ def plot_data(data):
     assembly_mask = EC_input2E[:, 0, :].mean(axis=0) > threshold
     plot_weight_histograms(weights, model, assembly_mask, spike_value=1e-6, n_bins=30)
 
-#    plot_population_rates(rates, mode="mean", figsize=(5,4))
-#    plot_population_rates(rates, mode="all", populations=["GCs", "PVIIs"], figsize=(5, 2)) # mode = {"mean", "all"}
+    plot_population_rates(rates, mode="mean", figsize=(5,4))
+    plot_population_rates(rates, mode="all", populations=["GCs", "PVIIs"], figsize=(5, 2)) # mode = {"mean", "all"}
     
     
 def main(rerun=False):
@@ -85,5 +85,5 @@ def main(rerun=False):
 
 
 if __name__ == "__main__":
-    main(rerun=False)
+    main(rerun=True)
     

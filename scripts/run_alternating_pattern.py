@@ -30,6 +30,8 @@ def generate_and_save_data():
     n_assemblies_total = 2
     n_repeat = 5
     
+    default.std_exc *= 1
+    
     # generate the input
     EC_input2E_2, EC_input2PVFF_2 = generate_training_input(default.T_assembly, 1, default.n_E, mean_exc=default.mean_exc, 
                                                             assembly_input=default.assembly_input, 
@@ -94,7 +96,7 @@ def main(rerun=False):
     
 
 if __name__ == "__main__":
-    main(rerun=False)
+    main(rerun=True)
     
     
     
