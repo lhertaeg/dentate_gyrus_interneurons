@@ -42,26 +42,29 @@ class DentateGyrus(nn.Module):
         def sparse_mask(n_pre, n_post, p):
             return (torch.rand(n_pre, n_post, device=device) < p).float()
         
-        # --- masks (mask_X_Y means Y -> X, shape (n_Y, n_X)) ---
+        # --- masks (mask_X_Y means Y -> X ---
         self.mask_EE = sparse_mask(n_E, n_E, self.c_EE / n_E)                
         self.mask_PV_FB_E = sparse_mask(n_E, n_PV_FB, self.c_PV_FB_E / n_E)
         self.mask_E_PV_FB = sparse_mask(n_PV_FB, n_E, self.c_E_PV_FB / n_PV_FB)
         self.mask_E_PV_FF = sparse_mask(n_PV_FF, n_E, self.c_E_PV_FF / n_PV_FF)                      
         self.mask_PV_FF_PV_FB = torch.ones(n_PV_FB, n_PV_FF, device=device)
-        self.mask_PV_FB_PV_FB = torch.ones(n_PV_FB, n_PV_FB, device=device)  
+        self.mask_PV_FB_PV_FB = torch.ones(n_PV_FB, n_PV_FB, device=device)
+        self.mask_PV_FB_PV_FF = torch.ones(n_PV_FF, n_PV_FB, device=device)
     
-        # --- weights: w_X_Y means Y -> X and has shape (n_Y, n_X) ---
+        # --- weights: w_X_Y means Y -> X  ---
         w_EE = torch.rand(n_E, n_E, device=device) * self.mask_EE * 2 * total_weights[0,0] / self.c_EE                  
         self.w_PV_FB_E = nn.Parameter(torch.rand(n_E, n_PV_FB, device=device) * self.mask_PV_FB_E) * 2 * total_weights[2,0] / self.c_PV_FB_E        
         self.w_E_PV_FB = nn.Parameter(torch.rand(n_PV_FB, n_E, device=device) * self.mask_E_PV_FB) * 2 * total_weights[0,2] / self.c_E_PV_FB        
         w_E_PV_FF = torch.rand(n_PV_FF, n_E, device=device) * self.mask_E_PV_FF * 2 * total_weights[0,1] / self.c_E_PV_FF        
         w_PV_FF_PV_FB = torch.rand(n_PV_FB, n_PV_FF, device=device) * self.mask_PV_FF_PV_FB * 2 * total_weights[1,2] / n_PV_FB  
         w_PV_FB_PV_FB = torch.rand(n_PV_FB, n_PV_FB, device=device) * self.mask_PV_FB_PV_FB * 2 * total_weights[2,2] / n_PV_FB 
+        w_PV_FB_PV_FF = torch.rand(n_PV_FF, n_PV_FB, device=device) * self.mask_PV_FB_PV_FF * 2 * total_weights[2,1] / n_PV_FF 
     
         self.register_buffer("w_EE", w_EE)
         self.register_buffer("w_E_PV_FF", w_E_PV_FF)
         self.register_buffer("w_PV_FF_PV_FB", w_PV_FF_PV_FB)
         self.register_buffer("w_PV_FB_PV_FB", w_PV_FB_PV_FB)
+        self.register_buffer("w_PV_FB_PV_FF", w_PV_FB_PV_FF)
     
     def step(self, h_E, h_PV_FF, h_PV_FB, EC_E, EC_PV_FF, dt=1.0, plasticity=False, eta=0.01, w_max = 1.0, anti_hebb=True,
              alternative_flag=0):
@@ -79,7 +82,7 @@ class DentateGyrus(nn.Module):
         # Inputs 
         I_E = (r_E @ self.w_EE) - (r_PV_FF @ self.w_E_PV_FF) - (r_PV_FB @ self.w_E_PV_FB) + EC_E
         I_PV_FF = EC_PV_FF - (r_PV_FB @ self.w_PV_FF_PV_FB)
-        I_PV_FB = (r_E @ self.w_PV_FB_E) 
+        I_PV_FB = (r_E @ self.w_PV_FB_E) - (r_PV_FF @ self.w_PV_FB_PV_FF) # !!!!!!!!!!!!!!!!!!
         if alternative_flag==1:
             I_PV_FB += EC_PV_FF - r_PV_FB @ self.w_PV_FB_PV_FB
         

@@ -22,10 +22,14 @@ import run_one_pattern, run_alternating_pattern, run_coactivated_pattern, run_SI
 from src.analysis import load_or_generate, plot_scatter_weights, plot_population_rates, plot_suppression_index
 from src.analysis import plot_SI_heatmap, plot_weight_histograms
 
+import warnings
+warnings.filterwarnings("ignore")
+
 # %% Universal parameters
 
 fs = 6
 inch = 2.54
+
 
 # %% Define files and paths
 
@@ -78,7 +82,7 @@ ax_D4 = fig.add_subplot(R3[0,4])
 
 # load existing data or run simulation
 load_path = os.path.join("..", "results", "data_one_pattern.pkl")
-data = load_or_generate(load_path, run_one_pattern.generate_and_save_data, rerun=False)
+data = load_or_generate(load_path, run_one_pattern.generate_and_save_data, rerun=True)
 
 # get results 
 rates = data["results"]["rates"]
@@ -102,7 +106,7 @@ plot_population_rates(rates, mode="mean", figsize=(5,4), fs=fs, axes=ax_C3)
 
 # load existing data or run simulation
 load_path = os.path.join("..", "results", "data_coactivated_pattern.pkl")
-data = load_or_generate(load_path, run_coactivated_pattern.generate_and_save_data, rerun=False)
+data = load_or_generate(load_path, run_coactivated_pattern.generate_and_save_data, rerun=True)
 
 # get results
 rates = data["results"]["rates"]
@@ -128,7 +132,7 @@ plot_suppression_index(rates, assembly_code, assembly_1=1, assembly_2=2, time_wi
 
 # load existing data or run simulation
 load_path = os.path.join("..", "results", "data_alternating_pattern.pkl")
-data = load_or_generate(load_path, run_alternating_pattern.generate_and_save_data, rerun=False)
+data = load_or_generate(load_path, run_alternating_pattern.generate_and_save_data, rerun=True)
 
 # get results
 rates = data["results"]["rates"]
@@ -152,7 +156,7 @@ plot_suppression_index(rates, assembly_code, assembly_1=1, assembly_2=2, figsize
 
 # load existing data or run simulation
 load_path = os.path.join("..", "results", "data_SI_dependency.pkl")
-data = load_or_generate(load_path, run_SI_dependence.generate_and_save_data, rerun=False)
+data = load_or_generate(load_path, run_SI_dependence.generate_and_save_data, rerun=True)
 
 # get results
 SIs = data["SIs"] 
