@@ -14,6 +14,7 @@ from matplotlib.ticker import MaxNLocator
 import seaborn as sns
 import os
 import pickle
+from matplotlib.ticker import MultipleLocator
 
 # %% universal parameters
 
@@ -212,7 +213,7 @@ def plot_population_rates(rates, figsize=(15,4), mode="mean", max_ticks=3, popul
         axes.spines["top"].set_visible(False)
         axes.spines["right"].set_visible(False)
 
-        # Limit tick count
+        #axes.set_xticks(np.linspace(*axes.get_xlim(), max_ticks))
         axes.xaxis.set_major_locator(plt.MaxNLocator(max_ticks))
         axes.yaxis.set_major_locator(plt.MaxNLocator(max_ticks))
         

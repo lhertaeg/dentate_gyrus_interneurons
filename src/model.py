@@ -82,7 +82,7 @@ class DentateGyrus(nn.Module):
         # Inputs 
         I_E = (r_E @ self.w_EE) - (r_PV_FF @ self.w_E_PV_FF) - (r_PV_FB @ self.w_E_PV_FB) + EC_E
         I_PV_FF = EC_PV_FF - (r_PV_FB @ self.w_PV_FF_PV_FB)
-        I_PV_FB = (r_E @ self.w_PV_FB_E) - (r_PV_FF @ self.w_PV_FB_PV_FF) # !!!!!!!!!!!!!!!!!!
+        I_PV_FB = (r_E @ self.w_PV_FB_E) - (r_PV_FF @ self.w_PV_FB_PV_FF)
         if alternative_flag==1:
             I_PV_FB += EC_PV_FF - r_PV_FB @ self.w_PV_FB_PV_FB
         

@@ -96,7 +96,7 @@ def main(rerun=False):
     
 
 if __name__ == "__main__":
-    main(rerun=False)
+    main(rerun=True)
     
     
     
